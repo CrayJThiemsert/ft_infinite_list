@@ -1,8 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ft_infinite_list/bloc/bloc.dart';
+import 'models/id.dart';
+import 'models/items.dart';
 import 'models/models.dart';
+
 
 void main() {
   BlocSupervisor.delegate = SimpleBlocDelegate();
@@ -11,7 +16,8 @@ void main() {
 
 class App extends StatelessWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)  {
+    final items = _fetchYoutubeVideos();
     return MaterialApp(
       title: 'Flutter Infinite Scroll',
       home: Scaffold(
@@ -25,6 +31,34 @@ class App extends StatelessWidget {
         ),
       ),
     );
+  }
+
+
+  Future<List<Item>> _fetchYoutubeVideos() async {
+    String srcUrl = 'https://s3-ap-southeast-1.amazonaws.com/ysetter/media/video-search.json';
+
+    final response = await http.Client().get(srcUrl);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body); // as List;
+      debugPrint('${data["items"].toString()}');
+
+      List<Item> items = data["items"]?.map<Item>((rawItem) {
+        return Item(
+          kind: rawItem['kind'],
+          id: Id(
+            kind: rawItem['id']['kind'],
+            videoId: rawItem['id']['videoId'],
+            channelId: rawItem['id']['channelId'],
+          ),
+        );
+      }).toList();
+      debugPrint('items.length=${items.length}');
+
+      return items;
+    } else {
+      throw Exception('error fetching posts');
+    }
   }
 }
 
